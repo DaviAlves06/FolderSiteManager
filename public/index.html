@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Organizador Pessoal</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Organizador Pessoal</h1>
+
+        <section class="panel">
+            <h2>Arquivos</h2>
+            <form id="uploadForm">
+                <input type="file" id="fileInput" />
+                <button type="submit">Enviar</button>
+            </form>
+            <ul id="fileList"></ul>
+        </section>
+
+        <section class="panel">
+            <h2>Favoritos (Sites)</h2>
+            <form id="bookmarkForm">
+                <input id="bmTitle" placeholder="Título" required />
+                <input id="bmUrl" placeholder="URL" required />
+                <input id="bmTags" placeholder="Tags (separadas por vírgula)" />
+                <button type="submit">Adicionar</button>
+            </form>
+            <ul id="bookmarkList"></ul>
+        </section>
+    </div>
+
+    <script src="/main.js"></script>
+</body>
+<!-- Código simples para uso pessoal/local -->
+</html>
+
+
