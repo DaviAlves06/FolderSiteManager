@@ -57,7 +57,13 @@ async function refreshBookmarks() {
 		const left = document.createElement('div');
 		left.className = 'row';
 		const tags = (b.tags || []).map(t => `<span class="tag">${t}</span>`).join(' ');
-		left.innerHTML = `<a href="${b.url}" target="_blank" rel="noopener">${b.title}</a> <span class="muted">${new URL(b.url).hostname}</span> ${tags}`;
+        let hostname = '';
+        try {
+            hostname = new URL(/^https?:\/\//i.test(b.url) ? b.url : `https://${b.url}`).hostname;
+        } catch (_) {
+            hostname = '';
+        }
+        left.innerHTML = `<a href="${/^https?:\/\//i.test(b.url) ? b.url : `https://${b.url}`}" target="_blank" rel="noopener">${b.title}</a> ${hostname ? `<span class=\"muted\">${hostname}</span>` : ''} ${tags}`;
 		const right = document.createElement('div');
 		right.className = 'row';
 		const edit = document.createElement('button');
@@ -146,7 +152,10 @@ async function refreshBookmarks() {
 document.getElementById('bookmarkForm').addEventListener('submit', async (e) => {
 	e.preventDefault();
 	const title = document.getElementById('bmTitle').value.trim();
-	const url = document.getElementById('bmUrl').value.trim();
+    let url = document.getElementById('bmUrl').value.trim();
+    if (url && !/^https?:\/\//i.test(url)) {
+        url = `https://${url}`;
+    }
 	const tags = document.getElementById('bmTags').value.split(',').map(s=>s.trim()).filter(Boolean);
 	if (!title || !url) return;
 	await fetch('/api/bookmarks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, url, tags }) });
