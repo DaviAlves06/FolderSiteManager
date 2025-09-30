@@ -102,7 +102,22 @@ app.delete('/api/files/:name', (req, res) => {
 	const full = path.join(UPLOADS_DIR, filename);
 	if (!fs.existsSync(full)) return res.status(404).json({ error: 'Not found' });
 	fs.unlinkSync(full);
-	res.json({ ok: true });
+    // Cleanup: detach the deleted file from any bookmark attachments
+    try {
+        const data = readBookmarks();
+        let changed = false;
+        for (const bm of data.bookmarks) {
+            if (Array.isArray(bm.attachments) && bm.attachments.length > 0) {
+                const before = bm.attachments.length;
+                bm.attachments = bm.attachments.filter((att) => att !== filename);
+                if (bm.attachments.length !== before) changed = true;
+            }
+        }
+        if (changed) writeBookmarks(data);
+    } catch (_) {
+        // ignore cleanup errors
+    }
+    res.json({ ok: true });
 });
 
 // Routes: Bookmarks
@@ -119,7 +134,8 @@ app.post('/api/bookmarks', (req, res) => {
 		id: generateId(),
 		title,
 		url,
-		tags: Array.isArray(tags) ? tags : [],
+        tags: Array.isArray(tags) ? tags : [],
+        attachments: [],
 		createdAt: Date.now(),
 	};
 	data.bookmarks.push(bookmark);
@@ -152,6 +168,36 @@ app.delete('/api/bookmarks/:id', (req, res) => {
 	data.bookmarks.splice(idx, 1);
 	writeBookmarks(data);
 	res.json({ ok: true });
+});
+
+// Routes: Bookmark Attachments
+app.post('/api/bookmarks/:id/attachments', (req, res) => {
+    const { id } = req.params;
+    const { filename } = req.body;
+    if (!filename) return res.status(400).json({ error: 'filename is required' });
+    const data = readBookmarks();
+    const bm = data.bookmarks.find((b) => b.id === id);
+    if (!bm) return res.status(404).json({ error: 'Not found' });
+    // Ensure attachments array exists
+    bm.attachments = Array.isArray(bm.attachments) ? bm.attachments : [];
+    const full = path.join(UPLOADS_DIR, filename);
+    if (!fs.existsSync(full)) return res.status(404).json({ error: 'File does not exist' });
+    if (!bm.attachments.includes(filename)) bm.attachments.push(filename);
+    writeBookmarks(data);
+    res.status(201).json({ attachments: bm.attachments });
+});
+
+app.delete('/api/bookmarks/:id/attachments/:filename', (req, res) => {
+    const { id, filename } = req.params;
+    const data = readBookmarks();
+    const bm = data.bookmarks.find((b) => b.id === id);
+    if (!bm) return res.status(404).json({ error: 'Not found' });
+    bm.attachments = Array.isArray(bm.attachments) ? bm.attachments : [];
+    const before = bm.attachments.length;
+    bm.attachments = bm.attachments.filter((att) => att !== filename);
+    if (bm.attachments.length === before) return res.status(404).json({ error: 'Attachment not found' });
+    writeBookmarks(data);
+    res.json({ attachments: bm.attachments });
 });
 
 // Fallback to index.html for root

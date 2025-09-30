@@ -24,7 +24,8 @@ async function refreshFiles() {
 		del.textContent = 'Excluir';
 		del.onclick = async () => {
 			await fetch(`/api/files/${encodeURIComponent(f.name)}`, { method: 'DELETE' });
-			refreshFiles();
+            refreshFiles();
+            refreshBookmarks();
 		};
 		right.append(dl, del);
 		li.append(left, right);
@@ -45,10 +46,13 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 
 // Bookmarks UI
 async function refreshBookmarks() {
-	const data = await fetchJSON('/api/bookmarks');
+    const [bmData, filesData] = await Promise.all([
+        fetchJSON('/api/bookmarks'),
+        fetchJSON('/api/files'),
+    ]);
 	const list = document.getElementById('bookmarkList');
 	list.innerHTML = '';
-	for (const b of data.bookmarks) {
+    for (const b of bmData.bookmarks) {
 		const li = document.createElement('li');
 		const left = document.createElement('div');
 		left.className = 'row';
@@ -71,9 +75,71 @@ async function refreshBookmarks() {
 			await fetch(`/api/bookmarks/${b.id}`, { method: 'DELETE' });
 			refreshBookmarks();
 		};
-		right.append(edit, del);
-		li.append(left, right);
-		list.appendChild(li);
+        right.append(edit, del);
+
+        // Attachments block
+        const attachmentsBlock = document.createElement('div');
+        attachmentsBlock.style.marginTop = '6px';
+        const attachments = Array.isArray(b.attachments) ? b.attachments : [];
+
+        const attTitle = document.createElement('div');
+        attTitle.className = 'muted';
+        attTitle.textContent = 'Anexos:';
+        attachmentsBlock.appendChild(attTitle);
+
+        const attList = document.createElement('ul');
+        for (const fname of attachments) {
+            const item = document.createElement('li');
+            const link = document.createElement('a');
+            link.href = `/api/files/${encodeURIComponent(fname)}`;
+            link.textContent = fname;
+            link.target = '_blank';
+            const detachBtn = document.createElement('button');
+            detachBtn.textContent = 'Desanexar';
+            detachBtn.style.marginLeft = '8px';
+            detachBtn.onclick = async () => {
+                await fetch(`/api/bookmarks/${b.id}/attachments/${encodeURIComponent(fname)}`, { method: 'DELETE' });
+                refreshBookmarks();
+            };
+            item.append(link, detachBtn);
+            attList.appendChild(item);
+        }
+        attachmentsBlock.appendChild(attList);
+
+        // Attach control
+        const attachRow = document.createElement('div');
+        attachRow.className = 'row';
+        const select = document.createElement('select');
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = '-- Selecionar arquivo --';
+        select.appendChild(defaultOpt);
+        for (const f of filesData.files) {
+            const opt = document.createElement('option');
+            opt.value = f.name;
+            opt.textContent = f.name;
+            select.appendChild(opt);
+        }
+        const attachBtn = document.createElement('button');
+        attachBtn.textContent = 'Anexar';
+        attachBtn.onclick = async () => {
+            const filename = select.value;
+            if (!filename) return;
+            await fetch(`/api/bookmarks/${b.id}/attachments`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename })
+            });
+            refreshBookmarks();
+        };
+        attachRow.append(select, attachBtn);
+        attachmentsBlock.appendChild(attachRow);
+
+        const wrapper = document.createElement('div');
+        wrapper.append(left, attachmentsBlock);
+
+        li.append(wrapper, right);
+        list.appendChild(li);
 	}
 }
 
