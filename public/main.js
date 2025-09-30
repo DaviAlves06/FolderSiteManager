@@ -1,5 +1,13 @@
+const CONFIG = window.APP_CONFIG || {};
+const API_BASE = (CONFIG.API_BASE || '').replace(/\/$/, '');
+
+function apiUrl(path) {
+	if (API_BASE) return `${API_BASE}${path}`;
+	return path;
+}
+
 async function fetchJSON(url, options) {
-	const res = await fetch(url, options);
+	const res = await fetch(apiUrl(url), options);
 	if (!res.ok) throw new Error('Request failed');
 	return res.json();
 }
@@ -23,7 +31,7 @@ async function refreshFiles() {
 		const del = document.createElement('button');
 		del.textContent = 'Excluir';
 		del.onclick = async () => {
-			await fetch(`/api/files/${encodeURIComponent(f.name)}`, { method: 'DELETE' });
+			await fetch(apiUrl(`/api/files/${encodeURIComponent(f.name)}`), { method: 'DELETE' });
             refreshFiles();
             refreshBookmarks();
 		};
@@ -39,7 +47,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 	if (!input.files || !input.files[0]) return;
 	const form = new FormData();
 	form.append('file', input.files[0]);
-	await fetch('/api/upload', { method: 'POST', body: form });
+	await fetch(apiUrl('/api/upload'), { method: 'POST', body: form });
 	input.value = '';
 	refreshFiles();
 });
@@ -47,8 +55,8 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 // Bookmarks UI
 async function refreshBookmarks() {
     const [bmData, filesData] = await Promise.all([
-        fetchJSON('/api/bookmarks'),
-        fetchJSON('/api/files'),
+		fetchJSON('/api/bookmarks'),
+		fetchJSON('/api/files'),
     ]);
 	const list = document.getElementById('bookmarkList');
 	list.innerHTML = '';
@@ -72,13 +80,13 @@ async function refreshBookmarks() {
 			const newTitle = prompt('Título:', b.title) ?? b.title;
 			const newUrl = prompt('URL:', b.url) ?? b.url;
 			const newTags = prompt('Tags (vírgulas):', (b.tags||[]).join(',')) ?? (b.tags||[]).join(',');
-			await fetch(`/api/bookmarks/${b.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: newTitle, url: newUrl, tags: newTags.split(',').map(s=>s.trim()).filter(Boolean) }) });
+			await fetch(apiUrl(`/api/bookmarks/${b.id}`), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: newTitle, url: newUrl, tags: newTags.split(',').map(s=>s.trim()).filter(Boolean) }) });
 			refreshBookmarks();
 		};
 		const del = document.createElement('button');
 		del.textContent = 'Excluir';
 		del.onclick = async () => {
-			await fetch(`/api/bookmarks/${b.id}`, { method: 'DELETE' });
+			await fetch(apiUrl(`/api/bookmarks/${b.id}`), { method: 'DELETE' });
 			refreshBookmarks();
 		};
         right.append(edit, del);
@@ -97,14 +105,14 @@ async function refreshBookmarks() {
         for (const fname of attachments) {
             const item = document.createElement('li');
             const link = document.createElement('a');
-            link.href = `/api/files/${encodeURIComponent(fname)}`;
+			link.href = apiUrl(`/api/files/${encodeURIComponent(fname)}`);
             link.textContent = fname;
             link.target = '_blank';
             const detachBtn = document.createElement('button');
             detachBtn.textContent = 'Desanexar';
             detachBtn.style.marginLeft = '8px';
             detachBtn.onclick = async () => {
-                await fetch(`/api/bookmarks/${b.id}/attachments/${encodeURIComponent(fname)}`, { method: 'DELETE' });
+				await fetch(apiUrl(`/api/bookmarks/${b.id}/attachments/${encodeURIComponent(fname)}`), { method: 'DELETE' });
                 refreshBookmarks();
             };
             item.append(link, detachBtn);
@@ -120,7 +128,7 @@ async function refreshBookmarks() {
         defaultOpt.value = '';
         defaultOpt.textContent = '-- Selecionar arquivo --';
         select.appendChild(defaultOpt);
-        for (const f of filesData.files) {
+		for (const f of filesData.files) {
             const opt = document.createElement('option');
             opt.value = f.name;
             opt.textContent = f.name;
@@ -131,7 +139,7 @@ async function refreshBookmarks() {
         attachBtn.onclick = async () => {
             const filename = select.value;
             if (!filename) return;
-            await fetch(`/api/bookmarks/${b.id}/attachments`, {
+			await fetch(apiUrl(`/api/bookmarks/${b.id}/attachments`), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ filename })
@@ -158,7 +166,7 @@ document.getElementById('bookmarkForm').addEventListener('submit', async (e) => 
     }
 	const tags = document.getElementById('bmTags').value.split(',').map(s=>s.trim()).filter(Boolean);
 	if (!title || !url) return;
-	await fetch('/api/bookmarks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, url, tags }) });
+	await fetch(apiUrl('/api/bookmarks'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, url, tags }) });
 	document.getElementById('bmTitle').value = '';
 	document.getElementById('bmUrl').value = '';
 	document.getElementById('bmTags').value = '';
