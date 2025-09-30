@@ -1,23 +1,43 @@
-FolderSiteManager - Deploy rápido
+# FolderSiteManager - Deploy Gratuito Permanente
 
-Backend (Railway)
-1. Envie este repositório ao GitHub.
-2. Na Railway: New Project → Deploy from GitHub → selecione o repo.
-3. Em Settings, Start Command: node server.js.
-4. Em Networking, gere um domínio público e copie a URL.
-5. (Opcional) Crie Volumes e monte em /app/uploads e /app/data.
-6. Redeploy/Restart.
+## Backend (Render - 100% Gratuito)
+1. **GitHub**: Envie este repositório ao GitHub
+2. **Render**: 
+   - Acesse [render.com](https://render.com)
+   - New → Web Service
+   - Connect GitHub → selecione seu repositório
+   - Configurações:
+     - **Name**: foldersitemanager
+     - **Environment**: Node
+     - **Build Command**: `npm install`
+     - **Start Command**: `node server.js`
+     - **Plan**: Free
+3. **Deploy**: Clique em "Create Web Service"
+4. **URL**: Copie a URL gerada (ex: `https://foldersitemanager.onrender.com`)
 
-Frontend (Vercel)
-1. Edite public/config.js:
-```
+## Frontend (Vercel - Gratuito)
+1. **Config**: Edite `public/config.js`:
+```js
 window.APP_CONFIG = {
-    API_BASE: 'https://SEU-PROJETO.up.railway.app',
+    API_BASE: 'https://SEU-PROJETO.onrender.com',
     SUPABASE_URL: '',
     SUPABASE_ANON_KEY: '',
 };
 ```
-2. Faça deploy da pasta public/ na Vercel.
+2. **Vercel**: 
+   - New Project → Import Git Repository
+   - Root Directory: `public/`
+   - Deploy
 
-O site chamará a API do Railway e manterá arquivos e links.
+## Vantagens do Render
+- ✅ **100% Gratuito** (sem trial)
+- ✅ **Persistência** de arquivos no disco
+- ✅ **Domínio** `.onrender.com` permanente
+- ✅ **Auto-deploy** do GitHub
+- ✅ **SSL** automático
+
+## Teste Final
+- Acesse o link da Vercel
+- Adicione favoritos e arquivos
+- Tudo deve persistir perfeitamente!
 
